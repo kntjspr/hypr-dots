@@ -4,7 +4,7 @@
 # press the same hotkey again to stop all running instances
 
 PIDFILE="/tmp/human-paste.pid"
-MAX_DELAY=0.5
+MAX_DELAY=0.08
 
 cleanup() {
     # remove our pid from the file
@@ -37,8 +37,8 @@ fi
 # register our pid
 echo "$$" >> "$PIDFILE"
 
-# get clipboard content
-CLIPBOARD=$(wl-paste 2>/dev/null)
+# get clipboard content and strip trailing newlines
+CLIPBOARD=$(wl-paste 2>/dev/null | sed 's/[[:space:]]*$//')
 
 if [[ -z "$CLIPBOARD" ]]; then
     notify-send "Clipboard Empty" "Nothing to paste" -t 2000
@@ -46,7 +46,7 @@ if [[ -z "$CLIPBOARD" ]]; then
 fi
 
 # type each character with a random delay
-while IFS= read -r -n1 char; do
+printf '%s' "$CLIPBOARD" | while IFS= read -r -n1 char; do
     if [[ -n "$char" ]]; then
         # handle special characters for wtype
         case "$char" in
@@ -62,7 +62,7 @@ while IFS= read -r -n1 char; do
     # random delay between 0 and MAX_DELAY seconds
     delay=$(awk -v max="$MAX_DELAY" 'BEGIN{srand(); printf "%.3f", rand()*max}')
     sleep "$delay"
-done <<< "$CLIPBOARD"
+done
 
 # press enter after finishing
-wtype -k Return
+# wtype -k Return
